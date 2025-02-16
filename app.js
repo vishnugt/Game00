@@ -28,7 +28,7 @@ const app = Vue.createApp({
     },
     computed: {
         gameLink() {
-            return `${window.location.origin}${window.location.pathname}?id=${this.myId}`;
+            return this.myId === "" ? null : `${window.location.origin}${window.location.pathname}?id=${this.myId}`;
         }
     },
     mounted() {
@@ -97,6 +97,9 @@ const app = Vue.createApp({
                     this.opponentMove = null;
                     this.moveLock = false;
                     this.turnMessage = "Waiting for your move...";
+                } else if (data.type === "battleLog") {
+                    // ✅ Add log from opponent
+                    this.battleLogs.unshift(data.log);
                 }
             });
         },
@@ -141,8 +144,9 @@ const app = Vue.createApp({
         processMoves() {
             if (!this.isHost || !this.myMove || !this.opponentMove) return;
 
-            let log = `You used ${this.myMove.type} (${this.myMove.value}), Opponent used ${this.opponentMove.type} (${this.opponentMove.value})`;
+            let log = `Player1 used ${this.myMove.type} (${this.myMove.value}), Player2 used ${this.opponentMove.type} (${this.opponentMove.value})`;
             this.battleLogs.unshift(log);
+            this.connection.send({type: "battleLog", log});
 
             let newMyHealth = this.myHealth;
             let newOpponentHealth = this.opponentHealth;

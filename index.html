@@ -54,7 +54,7 @@
             </div>
         </div>
 
-        <div v-if="!gameStarted">
+        <div v-if="!gameStarted && gameLink !== null">
             <p>Share this link to invite a player:</p>
             <input type="text" :value="gameLink" readonly>
             <button @click="copyGameLink">Copy Link</button>
