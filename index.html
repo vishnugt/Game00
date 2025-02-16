@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Turn-Based Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app" class="container text-center mt-4">
+    <h1 class="mb-3">Multiplayer Turn-Based Game</h1>
+
+    <!-- Copy and Share Invite Link -->
+    <div>
+        <button class="btn btn-primary" @click="copyLink">Copy Invite Link</button>
+        <input type="text" :value="gameLink" readonly class="form-control mt-2">
+    </div>
+
+    <!-- Health Bars -->
+    <div class="mt-3">
+        <h4>Your Health: {{ myHealth }}</h4>
+        <div class="progress mb-3">
+            <div class="progress-bar bg-success" role="progressbar" :style="{ width: (myHealth / maxHealth) * 100 + '%' }"></div>
+        </div>
+
+        <h4>Opponent Health: {{ opponentHealth }}</h4>
+        <div class="progress">
+            <div class="progress-bar bg-danger" role="progressbar" :style="{ width: (opponentHealth / maxHealth) * 100 + '%' }"></div>
+        </div>
+    </div>
+
+    <!-- Game Status -->
+    <h3 class="mt-3">{{ statusMessage }}</h3>
+
+    <!-- Move Selection -->
+    <div v-if="!myMove || !opponentMove">
+    <h3 class="mt-4">Choose Your Move</h3>
+        <div class="row">
+            <div class="col">
+                <h5>Attacks</h5>
+                <div>
+                    <button v-for="(val, index) in attacks" :key="'a' + index"
+                            :disabled="usedAttacks[index]" @click="makeMove('attack', index)"
+                            class="btn btn-danger m-1">
+                        Attack {{ val }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="col">
+                <h5>Blocks</h5>
+                <div>
+                    <button v-for="(val, index) in blocks" :key="'b' + index"
+                            :disabled="usedBlocks[index]" @click="makeMove('block', index)"
+                            class="btn btn-warning m-1">
+                        Block {{ val }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waiting Message -->
+    <div v-else class="mt-3">
+        <h3>Waiting for opponent's move...</h3>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
