@@ -20,7 +20,10 @@ const app = Vue.createApp({
 
             // Game Status
             statusMessage: "Waiting for connection...",
-            isHost: true
+            isHost: true,
+            battleLogs: [], // ✅ Added battle logs
+            turnMessage: "Waiting for your move...", // ✅ Turn indicator
+            moveLock: false // ✅ Lock moves after selection
         };
     },
     computed: {
@@ -33,7 +36,6 @@ const app = Vue.createApp({
 
         this.peer.on("open", (id) => {
             this.myId = id;
-            this.statusMessage = `Your ID: ${id}`;
 
             const urlParams = new URLSearchParams(window.location.search);
             const joinId = urlParams.get("id");
@@ -46,12 +48,17 @@ const app = Vue.createApp({
         });
 
         this.peer.on("connection", (conn) => {
-            if (this.connection) return; // Prevent multiple connections
+            if (this.connection) return;
             this.connection = conn;
             this.setupConnection();
         });
     },
     methods: {
+        copyGameLink() {
+            navigator.clipboard.writeText(this.gameLink).then(() => {
+                alert("Game link copied to clipboard!");
+            });
+        },
         connectToOpponent() {
             if (!this.opponentId) return;
             this.connection = this.peer.connect(this.opponentId);
@@ -71,7 +78,6 @@ const app = Vue.createApp({
 
             this.connection.on("data", (data) => {
                 if (data.type === "init") {
-                    // Both host and opponent process this
                     this.myHealth = data.health;
                     this.opponentHealth = data.health;
                     this.maxHealth = data.health;
@@ -81,26 +87,26 @@ const app = Vue.createApp({
                     this.usedBlocks = new Array(data.blocks.length).fill(false);
                     this.statusMessage = "Game started! Choose your move.";
                 } else if (data.type === "attack" || data.type === "block") {
-                    this.opponentMove = data;  // ✅ Store opponent move
-                    this.checkMoves();         // ✅ Check if both moves are made
+                    this.opponentMove = data;
+                    this.checkMoves();
                 } else if (data.type === "updateHealth") {
-                    this.myHealth = data.opponentHealth;  // ✅ Update local health
-                    this.opponentHealth = data.myHealth;  // ✅ Sync opponent's health
-                    this.moveSent = false;                // ✅ Reset move state
-                    this.myMove = null;                   // ✅ Clear move data
+                    this.myHealth = data.opponentHealth;
+                    this.opponentHealth = data.myHealth;
+                    this.moveSent = false;
+                    this.myMove = null;
                     this.opponentMove = null;
+                    this.moveLock = false;
+                    this.turnMessage = "Waiting for your move...";
                 }
             });
-        }
-        ,
+        },
         startGameSession() {
-            let health = Math.floor(Math.random() * 6) + 10; // Random 10-15
+            let health = Math.floor(Math.random() * 6) + 10;
             let attacks = Array.from({length: 5}, () => Math.floor(Math.random() * 5) + 1);
             let blocks = Array.from({length: 5}, () => Math.floor(Math.random() * 5) + 1);
 
             let gameData = {type: "init", health, attacks, blocks};
 
-            // Host also updates its own UI
             this.myHealth = this.opponentHealth = this.maxHealth = health;
             this.attacks = [...attacks];
             this.blocks = [...blocks];
@@ -108,91 +114,57 @@ const app = Vue.createApp({
             this.usedBlocks = new Array(blocks.length).fill(false);
 
             this.connection.send(gameData);
-        }
-        ,
-
+        },
         makeMove(type, index) {
             if (!this.connection || this.moveSent) return;
 
             let value = (type === "attack") ? this.attacks[index] : this.blocks[index];
-
-            if(type === "attack") {
-                this.usedAttacks[index] = true;
-            }
-            if(type === "block") {
-                this.usedBlocks[index] = true;
-            }
-
-
-            console.log("Sending move:", {type, value}); // 🔍 Debug log
+            if (type === "attack") this.usedAttacks[index] = true;
+            if (type === "block") this.usedBlocks[index] = true;
 
             this.connection.send({type: type, value, player: this.isHost ? "host" : "opponent"});
 
             this.myMove = {type, value};
-            this.moveSent = true;  // ✅ Player has sent a move
+            this.moveSent = true;
+            this.moveLock = true;
+            this.turnMessage = "Waiting for opponent's move...";
 
-            this.checkMoves();  // ✅ Check if both moves are made
-        }
-
-
-        , checkMoves() {
+            this.checkMoves();
+        },
+        checkMoves() {
             if (this.myMove && this.opponentMove) {
-                console.log("Both players moved, processing moves..."); // 🔍 Debug log
-
-                if (this.isHost) {  // ✅ Only the host processes moves
+                if (this.isHost) {
                     this.processMoves();
                 }
             }
-        }
-
-        ,
+        },
         processMoves() {
-            if (!this.isHost) return; // ✅ Only the host processes moves
+            if (!this.isHost || !this.myMove || !this.opponentMove) return;
 
-            if (!this.myMove || !this.opponentMove) return; // Wait for both moves
-
-            console.log("Received opponentMove:", JSON.stringify(this.opponentMove));
-            console.log("My Move:", JSON.stringify(this.myMove));
-
-            console.log("Before Processing:", this.myHealth, this.opponentHealth);
-
-
-            let myAction = this.myMove.type;
-            let myValue = this.myMove.value;
-            let opponentAction = this.opponentMove.type;
-            let opponentValue = this.opponentMove.value;
-            console.log(`Processing Moves: My (${myAction}, ${myValue}) vs Opponent (${opponentAction}, ${opponentValue})`);
+            let log = `You used ${this.myMove.type} (${this.myMove.value}), Opponent used ${this.opponentMove.type} (${this.opponentMove.value})`;
+            this.battleLogs.unshift(log);
 
             let newMyHealth = this.myHealth;
             let newOpponentHealth = this.opponentHealth;
 
-            if (myAction === "attack" && opponentAction === "attack") {
-                newOpponentHealth -= myValue;
-                newMyHealth -= opponentValue;
-            } else if (myAction === "attack" && opponentAction === "block") {
-                newOpponentHealth = newOpponentHealth - myValue + opponentValue;
-            } else if (opponentAction === "attack" && myAction === "block") {
-                newMyHealth = newMyHealth - opponentValue + myValue;
+            if (this.myMove.type === "attack" && this.opponentMove.type === "attack") {
+                newOpponentHealth -= this.myMove.value;
+                newMyHealth -= this.opponentMove.value;
+            } else if (this.myMove.type === "attack" && this.opponentMove.type === "block") {
+                newOpponentHealth = newOpponentHealth - this.myMove.value + this.opponentMove.value;
+            } else if (this.opponentMove.type === "attack" && this.myMove.type === "block") {
+                newMyHealth = newMyHealth - this.opponentMove.value + this.myMove.value;
             }
 
-
-            // ✅ Send new health to opponent
             this.connection.send({type: "updateHealth", myHealth: newMyHealth, opponentHealth: newOpponentHealth});
 
-            // ✅ Update health locally
             this.myHealth = newMyHealth;
             this.opponentHealth = newOpponentHealth;
-
             this.myMove = null;
             this.opponentMove = null;
             this.moveSent = false;
-            console.log("After Processing:", newMyHealth, newOpponentHealth);
-        }
-        ,
-        copyLink() {
-            navigator.clipboard.writeText(this.gameLink)
-                .then(() => alert("Link copied!"))
-                .catch(err => console.error("Copy failed:", err));
+            this.moveLock = false;
+            this.turnMessage = "Waiting for your move...";
         }
     }
 });

@@ -1,11 +1,74 @@
 body {
-    background-color: #f8f9fa;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
 }
 
 .container {
     max-width: 600px;
-    background: white;
+    margin: 20px auto;
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+}
+
+.health-bar {
+    height: 20px;
+    background-color: green;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.move-container {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+}
+
+.attack-section, .block-section {
+    width: 45%;
+    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.attack-section {
+    background-color: #ffcccc;
+}
+
+.block-section {
+    background-color: #cce5ff;
+}
+
+.attack-button {
+    background-color: #ff4444;
+    color: white;
+}
+
+.block-button {
+    background-color: #4444ff;
+    color: white;
+}
+
+button {
+    margin: 5px;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.battle-log {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+    background: #f9f9f9;
 }
