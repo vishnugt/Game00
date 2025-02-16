@@ -16,10 +16,10 @@
         <p>{{ statusMessage }}</p>
 
         <div v-if="gameStarted">
-            <h2>Your Health: {{ myHealth }}/{{ maxHealth }}</h2>
+            <h2>Your Health ({{ isHost ? "Player 1" : "Player 2" }}) : {{myHealth }}/{{ maxHealth }}</h2>
             <div class="health-bar" :style="{ width: (myHealth / maxHealth * 100) + '%' }"></div>
 
-            <h2>Opponent's Health: {{ opponentHealth }}/{{ maxHealth }}</h2>
+            <h2>Opponent's Health ({{ isHost ? "Player 2" : "Player 1" }}) : {{ opponentHealth }}/{{ maxHealth }}</h2>
             <div class="health-bar" :style="{ width: (opponentHealth / maxHealth * 100) + '%' }"></div>
 
             <h3>{{ turnMessage }}</h3>

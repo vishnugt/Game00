@@ -17,6 +17,7 @@ const app = Vue.createApp({
             blocks: [],
             usedAttacks: [],
             usedBlocks: [],
+            round: 0,
 
             // Game Status
             statusMessage: "Waiting for connection...",
@@ -144,9 +145,6 @@ const app = Vue.createApp({
         processMoves() {
             if (!this.isHost || !this.myMove || !this.opponentMove) return;
 
-            let log = `Player1 used ${this.myMove.type} (${this.myMove.value}), Player2 used ${this.opponentMove.type} (${this.opponentMove.value})`;
-            this.battleLogs.unshift(log);
-            this.connection.send({type: "battleLog", log});
 
             let newMyHealth = this.myHealth;
             let newOpponentHealth = this.opponentHealth;
@@ -164,6 +162,18 @@ const app = Vue.createApp({
 
             this.myHealth = newMyHealth;
             this.opponentHealth = newOpponentHealth;
+
+            let log = "Round " + ++this.round + ": ";
+            if(this.myHealth > this.opponentHealth) {
+                log += "Player1 leading by " + (this.myHealth - this.opponentHealth);
+            } else if (this.myHealth < this.opponentHealth) {
+                log += "Player2 leading by " + (this.opponentHealth - this.myHealth);
+            } else {
+                log += "Score tied"
+            }
+            this.battleLogs.unshift(log);
+            this.connection.send({type: "battleLog", log});
+
             this.myMove = null;
             this.opponentMove = null;
             this.moveSent = false;
